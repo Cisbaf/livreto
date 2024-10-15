@@ -1,0 +1,21 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="pt-br">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'parciais/_head.html' %}
+    {% block head %} {% endblock%}
+  </head>
+  <body>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {{message.tags}} alertDesign container mt-2" role="alert">
+            {{message}} 
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% block body %}{% endblock %}
+  </body>
+  </html>
