@@ -29,7 +29,6 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://observatorio.cisbaf.org.br/api/",
     "https://observatorio.cisbaf.org.br",
     "http://192.168.1.10:8010",
     "http://127.0.0.1:8010",
