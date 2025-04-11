@@ -8,37 +8,55 @@
         body {
             background: black;
         }
+
         #flipbook .hard {
-            background-color: #ccc; /* Cor de fundo das capas */
-            border: 2px solid #333; /* Borda mais grossa */
+            background-color: #ccc;
+            border: 2px solid #333;
             text-align: center;
-            line-height: 200px; /* Centraliza o texto verticalmente */
+            line-height: 200px;
             font-weight: bold;
         }
+
         #flipbook .page {
             background-color: white;
             border: 1px solid #ccc;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            position: relative; /* necessário para posicionar .zoom-area */
         }
+
         #flipbook img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .box {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden; /* Para evitar que o conteúdo saia do contêiner ao dar zoom */
+            overflow: hidden;
         }
+
         .secondBox {
             width: 100vh;
             height: 80vh;
         }
+
         #flipbook {
-            transition: transform 1s ease; /* Transição suave durante o zoom */
-            transform-origin: center; /* Alinha a transformação no centro por padrão */
+            transition: transform 1s ease;
+            transform-origin: center;
+        }
+
+        /* Área clicável para zoom */
+        .zoom-area {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            z-index: 10;
+            cursor: zoom-in;
         }
     </style>
 {% endblock %}
@@ -52,7 +70,10 @@
                         <div class="hard"><img src="{% url 'livreto_render_page' livreto.slug page %}"/></div>
                         <div class="hard"></div>
                     {% else %}
-                        <div class="page"><img src="{% url 'livreto_render_page' livreto.slug page %}"/></div>
+                        <div class="page">
+                            <img src="{% url 'livreto_render_page' livreto.slug page %}"/>
+                            <div class="zoom-area"></div> <!-- Zoom só funciona aqui -->
+                        </div>
                     {% endif %}
                 {% endfor %}
             </div>
@@ -60,7 +81,7 @@
     </div>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             let zoomLevel = 1;
 
             // Inicia o flipbook
@@ -70,25 +91,27 @@
                 autoCenter: true
             });
 
-            // Aumentar ou diminuir o zoom ao clicar no flipbook
-            $("#flipbook").click(function(event) {
-                const offset = $(this).offset(); // Obtém a posição do flipbook na página
-                const x = event.pageX - offset.left; // Posição X do clique relativo ao flipbook
-                const y = event.pageY - offset.top; // Posição Y do clique relativo ao flipbook
+            // Zoom só quando clicar na área central
+            $(".zoom-area").click(function (event) {
+                event.stopPropagation(); // Impede o clique de virar a página
 
-                // Define a origem da transformação para a posição do clique
+                const offset = $("#flipbook").offset();
+                const x = event.pageX - offset.left;
+                const y = event.pageY - offset.top;
+
+                // Define origem do zoom no ponto clicado
                 $("#flipbook").css({
                     'transform-origin': `${x}px ${y}px`
                 });
 
-                // Aumenta ou diminui o zoom
+                // Alterna zoom
                 if (zoomLevel === 1) {
-                    zoomLevel += 0.5; // Aumenta o nível de zoom
+                    zoomLevel = 1.5;
                 } else {
-                    zoomLevel = 1; // Retorna ao nível original
-                    // Reseta o transform-origin para o centro ao voltar ao zoom original
+                    zoomLevel = 1;
                     $("#flipbook").css('transform-origin', 'center');
                 }
+
                 $("#flipbook").css("transform", "scale(" + zoomLevel + ")");
             });
         });
