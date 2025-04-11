@@ -1,0 +1,8 @@
+services:
+  livreto:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${LIVRETO_PORT}:8000"  # Certifique-se do uso correto da variável
