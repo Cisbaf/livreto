@@ -2,6 +2,8 @@ services:
   livreto:
     build: .
     restart: always
+    volumes:
+      - ./src/files:/app/files 
     env_file:
       - /etc/cisbaf-setup/envs/.env-livreto
     ports:
