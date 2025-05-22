@@ -5,115 +5,164 @@
     <script src="{% static 'js/jquery-3.3.1.slim.min.js' %}"></script>
     <script src="{% static 'turnjs4/lib/turn.js' %}"></script>
     <style>
-        body {
-            background: black;
+        .flipbook-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #2c2c2c;
+            overflow: hidden;
         }
 
-        #flipbook .hard {
-            background-color: #ccc;
-            border: 2px solid #333;
-            text-align: center;
-            line-height: 200px;
-            font-weight: bold;
+        #flipbook {
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            background: white;
+            transition: transform 0.3s ease;
+            transform-origin: center;
         }
 
         #flipbook .page {
             background-color: white;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-            position: relative; /* necessário para posicionar .zoom-area */
+            overflow: hidden;
+            position: relative;
         }
 
-        #flipbook img {
+        .page-content {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
         }
 
-        .box {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+        #flipbook .hard {
+            background: #f5f5f5;
         }
 
-        .secondBox {
-            width: 100vh;
-            height: 80vh;
-        }
-
-        #flipbook {
-            transition: transform 1s ease;
-            transform-origin: center;
-        }
-
-        /* Área clicável para zoom */
-        .zoom-area {
-            position: absolute;
-            top: 10%;
-            left: 10%;
-            width: 80%;
-            height: 80%;
-            z-index: 10;
-            cursor: zoom-in;
+        /* Ajuste para bordas de virada */
+        .turn-page {
+            width: 30px !important;
+            cursor: pointer;
         }
     </style>
 {% endblock %}
 
 {% block body %}
-    <div class="box">
-        <div class="secondBox">
-            <div id="flipbook">
-                {% for page in pages %}
-                    {% if forloop.counter == 1 %}
-                        <div class="hard"><img src="{% url 'livreto_render_page' livreto.slug page %}"/></div>
-                        <div class="hard"></div>
-                    {% else %}
-                        <div class="page">
-                            <img src="{% url 'livreto_render_page' livreto.slug page %}"/>
-                            <div class="zoom-area"></div> <!-- Zoom só funciona aqui -->
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
+    <div class="flipbook-container">
+        <div id="flipbook">
+            {% for page in pages %}
+                <div class="{% if forloop.first %}hard front-cover{% elif forloop.last %}hard back-cover{% else %}page{% endif %}">
+                    <div class="page-content" 
+                         style="background-image: url('{% url 'livreto_render_page' livreto.slug page %}')"></div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 
     <script>
-        $(document).ready(function () {
+        $(function() {
             let zoomLevel = 1;
+            let isZoomed = false;
+            let isDragging = false;
+            let startX, startY;
+            const dragThreshold = 5;
+            const flipbook = $('#flipbook');
 
-            // Inicia o flipbook
-            $("#flipbook").turn({
-                width: "100%",
-                height: "100%",
-                autoCenter: true
+            // Inicialização responsiva
+            function initFlipbook() {
+                const container = $('.flipbook-container');
+                const width = Math.min(container.width() * 0.9, 1200);
+                const height = Math.min(container.height() * 0.8, 800);
+
+                flipbook.turn({
+                    width: width,
+                    height: height,
+                    display: 'single', // Começa com página única
+                    autoCenter: true,
+                    acceleration: true,
+                    gradients: true,
+                    when: {
+                        turning: function(e, page) {
+                            if(isZoomed) resetZoom();
+                        },
+                        turned: function(e, page) {
+                            // Muda para modo duplo após a capa
+                            if(page === 1) flipbook.turn('display', 'double');
+                        }
+                    }
+                }).turn('page', 1); // Começa na capa fechada
+            }
+
+            // Controle de arrasto vs zoom
+            flipbook.on('mousedown', function(e) {
+                startX = e.pageX;
+                startY = e.pageY;
+                isDragging = false;
             });
 
-            // Zoom só quando clicar na área central
-            $(".zoom-area").click(function (event) {
-                event.stopPropagation(); // Impede o clique de virar a página
-
-                const offset = $("#flipbook").offset();
-                const x = event.pageX - offset.left;
-                const y = event.pageY - offset.top;
-
-                // Define origem do zoom no ponto clicado
-                $("#flipbook").css({
-                    'transform-origin': `${x}px ${y}px`
-                });
-
-                // Alterna zoom
-                if (zoomLevel === 1) {
-                    zoomLevel = 1.5;
-                } else {
-                    zoomLevel = 1;
-                    $("#flipbook").css('transform-origin', 'center');
+            flipbook.on('mousemove', function(e) {
+                if(Math.abs(e.pageX - startX) > dragThreshold || 
+                   Math.abs(e.pageY - startY) > dragThreshold) {
+                    isDragging = true;
                 }
-
-                $("#flipbook").css("transform", "scale(" + zoomLevel + ")");
             });
+
+            flipbook.on('dblclick', function(e) {
+                if(!isDragging) {
+                    handleZoom(e);
+                }
+                isDragging = false;
+            });
+
+            // Redimensionamento responsivo
+            let resizeTimer;
+            $(window).on('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    flipbook.turn('destroy');
+                    initFlipbook();
+                }, 200);
+            });
+
+            // Controles de teclado
+            $(document).on('keydown', function(e) {
+                if(e.key === 'ArrowLeft') flipbook.turn('previous');
+                if(e.key === 'ArrowRight') flipbook.turn('next');
+            });
+
+            function handleZoom(e) {
+                const offset = flipbook.offset();
+                const x = e.pageX - offset.left;
+                const y = e.pageY - offset.top;
+                const width = flipbook.width();
+                const edgeThreshold = width * 0.15;
+
+                if(x < edgeThreshold || x > (width - edgeThreshold)) return;
+
+                toggleZoom(x, y);
+            }
+
+            function toggleZoom(x, y) {
+                isZoomed = !isZoomed;
+                zoomLevel = isZoomed ? 1.5 : 1;
+                
+                flipbook.css({
+                    'transform-origin': `${x}px ${y}px`,
+                    'transform': `scale(${zoomLevel})`
+                });
+            }
+
+            function resetZoom() {
+                isZoomed = false;
+                zoomLevel = 1;
+                flipbook.css({
+                    'transform': 'scale(1)',
+                    'transform-origin': 'center'
+                });
+            }
+
+            initFlipbook();
         });
     </script>
 {% endblock %}
