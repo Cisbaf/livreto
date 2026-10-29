@@ -5,7 +5,10 @@ from .controller import PDFController
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
+@login_required
 def livreto_index(request):
     filter = request.GET.get('filter')
     search = request.GET.get('search')
@@ -31,9 +34,9 @@ def livreto_infos(request, system):
     livretos = [livreto.json() for livreto in Livreto.objects.filter(system=system, active=True)]
     return JsonResponse(livretos, safe=False)
 
+@login_required
+@require_POST
 def livreto_register(request):
-    if request.method != "POST":
-        raise
     # form html
     form_name = request.POST.get('name')
     form_description = request.POST.get('description')
@@ -49,9 +52,9 @@ def livreto_register(request):
     messages.success(request, "Livreto criado com sucesso!")
     return redirect('livreto_index')
 
+@login_required
+@require_POST
 def livreto_update(request, pk):
-    if request.method != "POST":
-        raise
     # get livreto
     livreto = get_object_or_404(Livreto, pk=pk)
     # form html
@@ -72,6 +75,8 @@ def livreto_update(request, pk):
     messages.success(request, "Livreto editado com sucesso!")
     return redirect('livreto_index')
 
+@login_required
+@require_POST
 def livreto_delete(request, pk):
     livreto = get_object_or_404(Livreto, pk=pk)
     livreto.delete()

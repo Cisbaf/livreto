@@ -38,7 +38,9 @@ function EditLivreto(pk, url, name, desc, system, urlDel) {
 function DeleteLivreto(urlDel, name) {
     const del = confirm(`Você realmente deseja deletar o livreto ${name} ?`)
     if (!del) return;
-    window.location = urlDel;
+    const form = document.getElementById('deleteForm');
+    form.action = urlDel;
+    form.submit();
 }
 
 

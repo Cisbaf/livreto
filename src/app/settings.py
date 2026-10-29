@@ -26,13 +26,30 @@ SECRET_KEY = 'django-insecure-1n7d2j)27eq)lx#rp$!0h9h+ub)w%htr(gpse2r0ij=hen6=f-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "livreto.cisbaf.org.br",
+    "observatorio.cisbaf.org.br",  # site que consome /infos, /render, /pdf e /static via nginx
+    "192.168.1.10",
+    "localhost",
+    "127.0.0.1",
+] + [h.strip() for h in os.getenv("EXTRA_ALLOWED_HOSTS", "").split(",") if h.strip()]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://observatorio.cisbaf.org.br",
-    "http://192.168.1.10:8010",
-    "http://127.0.0.1:8010",
-]
+# Atrás do nginx (TLS termina lá): sem isso o Django vê http e rejeita o POST do
+# login/cadastro feito em https://livreto.cisbaf.org.br por falha de CSRF (403).
+CSRF_TRUSTED_ORIGINS = ["https://livreto.cisbaf.org.br"]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "livreto_index"
+LOGOUT_REDIRECT_URL = "login"
+
+#CORS_ALLOWED_ORIGINS = [
+#    "https://observatorio.cisbaf.org.br",
+#    "http://192.168.1.10:8010",
+#    "http://127.0.0.1:8010",
+#]
+CORS_ALLOW_ALL_ORIGINS = True
+
 # Application definition
 
 INSTALLED_APPS = [

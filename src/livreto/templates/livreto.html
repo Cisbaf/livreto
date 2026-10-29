@@ -31,6 +31,9 @@
             <button type="button" class="btn btn-primary" style="margin-left: 5px;" onclick="RegisterLivreto('{% url 'livreto_register' %}');">
                 Novo Livreto
             </button>
+            <form method="POST" action="{% url 'logout' %}" style="margin-left: 5px;"> {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary" title="Sair ({{ user.get_username }})">Sair</button>
+            </form>
             </div>
         </div>
         </nav>
@@ -78,6 +81,9 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Exclusão: POST com CSRF (a rota não aceita GET) -->
+    <form id="deleteForm" method="POST" style="display:none;"> {% csrf_token %}</form>
 
     <!-- Modal -->
     <div class="modal fade" id="livretoModal" tabindex="-1" aria-labelledby="livretoModalLabel" aria-hidden="true">
